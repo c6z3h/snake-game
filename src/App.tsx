@@ -77,11 +77,9 @@ function App() {
   const [board, setBoard] = useState<IBoard>(initBoard(apple));
   // snake head direction, and snake head position (queue of [r,c])
   const [snakeDir, setSnakeDir] = useState<IDirection>("left"); // todo magic string remove
-  console.log("board outer", board[INIT_SNAKE_POSITION_R]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      console.log("snakeDir", snakeDir);
       const snakeHead = snake[0];
       let nextHead: [number, number] = [-1, -1];
       if (snakeDir === "left") {
@@ -109,8 +107,6 @@ function App() {
         setApple(getApple(newSnake));
       }
       setSnake(newSnake);
-      console.log("snake", newSnake);
-      console.log("nextHead", nextHead);
       const newBoard = paintAll(board, snake, apple);
       setBoard(newBoard);
       if (
@@ -124,7 +120,7 @@ function App() {
         return;
       }
     }, 500);
-    return () => dclearTimeout(timeoutId);
+    return () => clearTimeout(timeoutId);
   }, [board, snake, snakeDir]);
 
   useEffect(() => {
@@ -154,7 +150,6 @@ function App() {
       {board.map((row, r) => (
         <div style={{ display: "flex", flexDirection: "row" }}>
           {row.map((col, c) => {
-            // console.log("col", col);
             return (
               <div
                 style={{
