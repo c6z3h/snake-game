@@ -135,27 +135,28 @@ function App() {
       const newBoard = paintAll(snake, apple);
       setBoard(newBoard);
     }, 300);
-    return () => {
-      clearTimeout(timeoutId);
-    };
+    return () => clearTimeout(timeoutId);
   }, [snake, snakeDir]);
 
   useEffect(() => {
-    const snakeOutOfBounds =
-      snake[0][0] < 0 ||
-      snake[0][1] < 0 ||
-      snake[0][0] === BOARD_LENGTH ||
-      snake[0][1] === BOARD_LENGTH;
-    const snakeAteItself = snake.find(
-      ([R, C], i) => R === snake[0][0] && C === snake[0][1] && i !== 0,
-    );
+    const timeoutId = setTimeout(() => {
+      const snakeOutOfBounds =
+        snake[0][0] < 0 ||
+        snake[0][1] < 0 ||
+        snake[0][0] === BOARD_LENGTH ||
+        snake[0][1] === BOARD_LENGTH;
+      const snakeAteItself = snake.find(
+        ([R, C], i) => R === snake[0][0] && C === snake[0][1] && i !== 0,
+      );
 
-    if (snakeOutOfBounds || snakeAteItself) {
-      setSnake(snake.slice(1));
-      alert("you lose!");
-      setSnakeDir(null);
-      return;
-    }
+      if (snakeOutOfBounds || snakeAteItself) {
+        setSnake(snake.slice(1));
+        alert("you lose!");
+        setSnakeDir(null);
+        return;
+      }
+    }, 200);
+    return () => clearTimeout(timeoutId);
   }, [board]);
 
   useEffect(() => {
