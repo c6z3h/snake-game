@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 
 /**
@@ -36,14 +36,21 @@ type IDirection =
   | typeof DIR_UP
   | null;
 
-const defaultBoard: IBoard = Array(BOARD_LENGTH).fill(
-  Array(BOARD_LENGTH).fill(EMPTY_CELL),
-);
+const getDefaultBoard = () => {
+  const board: IBoard = [];
+  for (let r = 0; r < BOARD_LENGTH; r++) {
+    board[r] = [];
+    for (let c = 0; c < BOARD_LENGTH; c++) {
+      board[r][c] = EMPTY_CELL;
+    }
+  }
+  return board;
+};
 
 const paintAll = (
   snake: ISnake,
   apple: [number, number],
-  board: IBoard = defaultBoard,
+  board: IBoard = getDefaultBoard(),
 ) => {
   for (const snakepart of snake) {
     const [r, c] = snakepart;
@@ -70,6 +77,23 @@ const getApple = (snake: ISnake) => {
   return [row, col] as [number, number];
 };
 
+const Cell: React.FC<{ val: ICell }> = React.memo(({ val }) => {
+  return (
+    <div
+      style={{
+        width: 40,
+        height: 40,
+        borderStyle: "solid",
+        borderWidth: 1,
+        borderColor: "white",
+        backgroundColor: "grey",
+      }}
+    >
+      {val}
+    </div>
+  );
+});
+
 function App() {
   const [snake, setSnake] = useState<ISnake>(INIT_SNAKE);
   const [apple, setApple] = useState<[number, number]>(getApple(snake));
@@ -79,22 +103,26 @@ function App() {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      if (snakeDir === null) {
+        clearTimeout(timeoutId);
+        return;
+      }
       const snakeHead = snake[0];
       let nextHead: [number, number] = [0, 0];
-      if (snakeDir === "left") {
+      if (snakeDir === DIR_LEFT) {
         nextHead = [snakeHead[0], snakeHead[1] - 1];
 
         // todo: hint combine the layers in computer graphics
         // use the snake to re-render the board completely
         // todo: hint ctrl + D
       }
-      if (snakeDir === "right") {
+      if (snakeDir === DIR_RIGHT) {
         nextHead = [snakeHead[0], snakeHead[1] + 1];
       }
-      if (snakeDir === "up") {
+      if (snakeDir === DIR_UP) {
         nextHead = [snakeHead[0] - 1, snakeHead[1]];
       }
-      if (snakeDir === "down") {
+      if (snakeDir === DIR_DOWN) {
         nextHead = [snakeHead[0] + 1, snakeHead[1]];
       }
       const newSnake = [nextHead, ...snake];
@@ -106,36 +134,44 @@ function App() {
       setSnake(newSnake);
       const newBoard = paintAll(snake, apple);
       setBoard(newBoard);
-      if (
-        nextHead[0] < 0 ||
-        nextHead[1] < 0 ||
-        nextHead[0] === BOARD_LENGTH ||
-        nextHead[1] === BOARD_LENGTH
-      ) {
-        alert("you lose!");
-        setSnakeDir(null);
-        return;
-      }
-    }, 500);
+    }, 300);
     return () => {
       clearTimeout(timeoutId);
     };
   }, [snake, snakeDir]);
 
   useEffect(() => {
+    const snakeOutOfBounds =
+      snake[0][0] < 0 ||
+      snake[0][1] < 0 ||
+      snake[0][0] === BOARD_LENGTH ||
+      snake[0][1] === BOARD_LENGTH;
+    const snakeAteItself = snake.find(
+      ([R, C], i) => R === snake[0][0] && C === snake[0][1] && i !== 0,
+    );
+
+    if (snakeOutOfBounds || snakeAteItself) {
+      setSnake(snake.slice(1));
+      alert("you lose!");
+      setSnakeDir(null);
+      return;
+    }
+  }, [board]);
+
+  useEffect(() => {
     const changeDirection = (e: KeyboardEvent) => {
       const key = e.key;
-      if (key === "ArrowUp" && snakeDir !== "down") {
-        setSnakeDir("up");
+      if (key === "ArrowUp" && snakeDir !== DIR_DOWN) {
+        setSnakeDir(DIR_UP);
       }
-      if (key === "ArrowDown" && snakeDir !== "up") {
-        setSnakeDir("down");
+      if (key === "ArrowDown" && snakeDir !== DIR_UP) {
+        setSnakeDir(DIR_DOWN);
       }
-      if (key === "ArrowLeft" && snakeDir !== "right") {
-        setSnakeDir("left");
+      if (key === "ArrowLeft" && snakeDir !== DIR_RIGHT) {
+        setSnakeDir(DIR_LEFT);
       }
-      if (key === "ArrowRight" && snakeDir !== "left") {
-        setSnakeDir("right");
+      if (key === "ArrowRight" && snakeDir !== DIR_LEFT) {
+        setSnakeDir(DIR_RIGHT);
       }
     };
     // global listener for arrow key direction
@@ -143,26 +179,13 @@ function App() {
 
     return () => window.removeEventListener("keydown", changeDirection);
   }, [snakeDir]);
-
+  // TODO it doesn't show up correct, it terminate before ending
   return (
     <div>
-      {board.map((row) => (
+      {board.map((row, r) => (
         <div style={{ display: "flex", flexDirection: "row" }}>
-          {row.map((col) => {
-            return (
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderStyle: "solid",
-                  borderWidth: 1,
-                  borderColor: "white",
-                  backgroundColor: "grey",
-                }}
-              >
-                {col}
-              </div>
-            );
+          {row.map((val, c) => {
+            return <Cell key={`${r}_${c}`} val={val} />;
           })}
         </div>
       ))}
