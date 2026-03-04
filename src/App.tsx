@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
 
 /**
@@ -15,7 +13,6 @@ const BOARD_LENGTH = 20;
 // cell values
 const EMPTY_CELL = null;
 const SNAKE_CELL = "S";
-const INIT_SNAKE_LENGTH = 3;
 const INIT_SNAKE_POSITION_R = Math.floor(BOARD_LENGTH / 2);
 const INIT_SNAKE_POSITION_C = Math.floor(BOARD_LENGTH / 2);
 const INIT_SNAKE: ISnake = [
@@ -23,41 +20,43 @@ const INIT_SNAKE: ISnake = [
   [INIT_SNAKE_POSITION_R, INIT_SNAKE_POSITION_C + 1],
   [INIT_SNAKE_POSITION_R, INIT_SNAKE_POSITION_C + 2],
 ];
-const APPLE = "A";
+const APPLE_CELL = "A";
+const DIR_LEFT = "left";
+const DIR_RIGHT = "right";
+const DIR_UP = "up";
+const DIR_DOWN = "down";
 
-type ICell = 0 | "S" | "A"; // todo update typing
+type ICell = typeof EMPTY_CELL | typeof SNAKE_CELL | typeof APPLE_CELL;
 type IBoard = Array<Array<ICell>>;
 type ISnake = Array<[number, number]>;
-type IDirection = "left" | "right" | "up" | "down";
+type IDirection =
+  | typeof DIR_LEFT
+  | typeof DIR_RIGHT
+  | typeof DIR_DOWN
+  | typeof DIR_UP
+  | null;
 
-const paintAll = (board: IBoard, snake: ISnake, apple: [number, number]) => {
-  const ROW = board.length;
-  const COL = board[0].length;
-  for (let r = 0; r < ROW; r++) {
-    for (let c = 0; c < COL; c++) {
-      board[r][c] = EMPTY_CELL;
-    }
-  }
+const defaultBoard: IBoard = Array(BOARD_LENGTH).fill(
+  Array(BOARD_LENGTH).fill(EMPTY_CELL),
+);
+
+const paintAll = (
+  snake: ISnake,
+  apple: [number, number],
+  board: IBoard = defaultBoard,
+) => {
   for (const snakepart of snake) {
     const [r, c] = snakepart;
     board[r][c] = SNAKE_CELL;
   }
   const [apple_r, apple_c] = apple;
-  board[apple_r][apple_c] = APPLE;
+  board[apple_r][apple_c] = APPLE_CELL;
   return [...board];
 };
 
 const initBoard = (apple: [number, number]) => {
-  const board: IBoard = [[]];
-  for (let r = 0; r < BOARD_LENGTH; r++) {
-    board[r] = [];
-    for (let c = 0; c < BOARD_LENGTH; c++) {
-      board[r].push(EMPTY_CELL);
-    }
-  }
-  // console.log("board", board, INIT_SNAKE_POSITION_R, INIT_SNAKE_POSITION_C);
   // assuming it starts at center. if not conditional need math.min
-  const finalBoard = paintAll(board, INIT_SNAKE, apple);
+  const finalBoard = paintAll(INIT_SNAKE, apple);
   return finalBoard;
 };
 
@@ -76,20 +75,18 @@ function App() {
   const [apple, setApple] = useState<[number, number]>(getApple(snake));
   const [board, setBoard] = useState<IBoard>(initBoard(apple));
   // snake head direction, and snake head position (queue of [r,c])
-  const [snakeDir, setSnakeDir] = useState<IDirection>("left"); // todo magic string remove
+  const [snakeDir, setSnakeDir] = useState<IDirection>(DIR_LEFT);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const snakeHead = snake[0];
-      let nextHead: [number, number] = [-1, -1];
+      let nextHead: [number, number] = [0, 0];
       if (snakeDir === "left") {
         nextHead = [snakeHead[0], snakeHead[1] - 1];
 
         // todo: hint combine the layers in computer graphics
         // use the snake to re-render the board completely
-        // setBoard()
-        // todo steering of snake
-        // ctrl + D
+        // todo: hint ctrl + D
       }
       if (snakeDir === "right") {
         nextHead = [snakeHead[0], snakeHead[1] + 1];
@@ -107,7 +104,7 @@ function App() {
         setApple(getApple(newSnake));
       }
       setSnake(newSnake);
-      const newBoard = paintAll(board, snake, apple);
+      const newBoard = paintAll(snake, apple);
       setBoard(newBoard);
       if (
         nextHead[0] < 0 ||
@@ -120,11 +117,13 @@ function App() {
         return;
       }
     }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [board, snake, snakeDir]);
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [snake, snakeDir]);
 
   useEffect(() => {
-    const changeDirection = (e) => {
+    const changeDirection = (e: KeyboardEvent) => {
       const key = e.key;
       if (key === "ArrowUp" && snakeDir !== "down") {
         setSnakeDir("up");
@@ -147,9 +146,9 @@ function App() {
 
   return (
     <div>
-      {board.map((row, r) => (
+      {board.map((row) => (
         <div style={{ display: "flex", flexDirection: "row" }}>
-          {row.map((col, c) => {
+          {row.map((col) => {
             return (
               <div
                 style={{
