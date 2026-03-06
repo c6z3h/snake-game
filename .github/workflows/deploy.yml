@@ -20,6 +20,7 @@ jobs:
         run: |
           npm install
           npm run build
+          ls -R
 
       - name: Debug dist/index.html
         run: |
